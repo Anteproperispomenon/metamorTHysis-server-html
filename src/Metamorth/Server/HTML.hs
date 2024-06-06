@@ -80,22 +80,26 @@ makeForm iOrths oOrths = do
     radioButtons "output" oOrths
     Html.br
     Html.label ("Input Text") ! Atr.for "text_box"
-    Html.textarea (toHtml @T.Text "Input Text Here") ! Atr.id "text_box" ! Atr.name "text" ! Atr.rows "6" ! Atr.cols "40"
+    Html.textarea (toHtml @T.Text "") ! Atr.id "text_box" ! Atr.name "text" ! Atr.rows "6" ! Atr.cols "40" ! Atr.placeholder "Input Text Here"
     Html.br
-    ) ! Atr.name "mainForm"
+    ) ! Atr.name "mainForm" ! Atr.id "mainForm"
   Html.button ("Convert(?)") ! Atr.onclick (tv convertScript)
-  Html.textarea (toHtml @T.Text "Output Text Here") ! Atr.readonly "true" ! Atr.name "output_area" ! Atr.rows "6" ! Atr.cols "40" ! Atr.id "outbox"
+  Html.textarea (toHtml @T.Text "") ! Atr.readonly "true" ! Atr.name "output_area" ! Atr.rows "6" ! Atr.cols "40" ! Atr.id "outbox" ! Atr.placeholder "Output Text Here"
 
+-- Need to check what fields are in the returned text.
 convertScript :: T.Text
 convertScript = mconcat
-    [ "var jsonInput = JSON.stringify(Object.fromEntries(mainForm));"
-    , "var pasteResult = function(txt) {"
-    , "document.getElementById('outbox').value = txt;"
+    [ "var myForm = document.getElementById('mainForm');"
+    , "var thisForm = new FormData(myForm);"
+    , "var jsonInput = Object.fromEntries(thisForm);"
+    -- , "var jsonInput = JSON.stringify(Object.fromEntries(thisForm));"
+    , "var pasteResult = function(rslt) {"
+    , "document.getElementById('outbox').innerHTML = rslt.text;"
     , " }; "
-    , "var pasteError = function(err) {"
-    , "document.getElementById('outbox').value = err;"
+    , "var pasteError = function(rslt) {"
+    , "document.getElementById('outbox').innerHTML = rslt;"
     , "};"
-    , "postConvert(jsonInput, );"
+    , "postConvert(jsonInput, pasteResult, pasteError);"
     ]
     
 
