@@ -1,6 +1,10 @@
 module Metamorth.Server.HTML.Extra
   ( invertOrthMap
+  , invertOrthMapAlt
+  , mapMaybeFst
   ) where
+
+import Control.Arrow (first)
 
 import Data.Map.Strict qualified as M
 import Data.Set        qualified as S
@@ -16,3 +20,26 @@ invertOrthMap = M.foldlWithKey (\mp' k val -> insertWithElse S.insert S.singleto
 insertWithElse :: (Ord k) => (w -> v -> v) -> (w -> v) -> k -> w -> M.Map k v -> M.Map k v
 insertWithElse op f k val
   = M.alter (\case {Nothing -> Just $ f val ; (Just y) -> Just $ op val y}) k
+
+
+-- -> M.Map String (oorth, String)
+
+invertOrthMapAlt :: (Ord outOrth, Ord txt) => M.Map txt (outOrth, String) -> M.Map outOrth (S.Set txt, String)
+invertOrthMapAlt = M.foldlWithKey (\mp' k (val, dsc) -> insertWithElse insertFst makeFirst val (k, dsc) mp') M.empty
+  where
+    insertFst :: (Ord a{-, Semigroup b-}) => (a,b) -> (S.Set a,b) -> (S.Set a,b)
+    insertFst (x,_z) (st, dsc) = (S.insert x st, dsc)
+
+    makeFirst :: (a,b) -> (S.Set a, b)
+    makeFirst (x,y) = (S.singleton x, y)
+
+-- mapMaybe :: (a -> Maybe b) -> Map k a -> Map k b
+
+mapMaybeFst :: (a -> Maybe b) -> M.Map k (a,c) -> M.Map k (b,c)
+mapMaybeFst f = M.mapMaybe 
+  (\(x,y) -> case f x of
+     Nothing  -> Nothing
+     (Just z) -> Just (z,y)
+  )
+
+

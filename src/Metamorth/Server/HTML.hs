@@ -3,6 +3,7 @@ module Metamorth.Server.HTML
   , makeMainHTMLCSS
   ) where
 
+import Control.Arrow ((***))
 import Control.Monad
 
 import Data.Map.Strict qualified as M
@@ -58,13 +59,14 @@ makeConverterHTML mCssFile iOrths' oOrths' = do
 
   Html.h1 "Basic Converter"
   Html.br
-  makeForm iOrths oOrths -- make the basic form...
+  makeForm iOrths xOrths -- make the basic form...
 
   Html.script (toHtml @T.Text "") ! Atr.src "run_convert.js"
 
   where
     iOrths = revMap iOrths'
     oOrths = revMap $ fst <$> oOrths'
+    xOrths = revMap' oOrths'
     cssHdr :: Html
     cssHdr
       | (Just cssFile) <- mCssFile
@@ -77,6 +79,13 @@ revMap
   => M.Map String orth
   -> M.Map T.Text T.Text
 revMap orthMap = M.map T.pack $ M.mapKeys stripStart $ M.mapMaybe S.lookupMin $ invertOrthMap orthMap
+
+revMap'
+  :: forall orth. (Show orth, Ord orth, Enum orth, Bounded orth)
+  => M.Map String (orth, String)
+  -> M.Map T.Text (T.Text, T.Text)
+revMap' orthMap = M.map (T.pack *** T.pack) $ M.mapKeys stripStart $ mapMaybeFst S.lookupMin $ invertOrthMapAlt orthMap
+
 
 stripStart :: (Show a) => a -> T.Text
 stripStart x
@@ -96,7 +105,8 @@ sv = stringValue
 
 -- Note: This is a different organisation of the
 -- Maps from the main function.
-makeForm :: M.Map T.Text T.Text -> M.Map T.Text T.Text -> Html
+-- makeForm :: M.Map T.Text T.Text -> M.Map T.Text T.Text -> Html
+makeForm :: M.Map T.Text T.Text -> M.Map T.Text (T.Text, T.Text) -> Html
 makeForm iOrths oOrths = do
   Html.form (do
     text "Input Orthography: "
@@ -105,7 +115,7 @@ makeForm iOrths oOrths = do
     Html.br
     text "Output Orthography: "
     Html.br
-    radioButtons 2 "output" oOrths
+    radioButtons'' False False 2 "output" oOrths
     Html.br
     Html.label ("Input Text") ! Atr.for "text_box"
     Html.br
@@ -152,6 +162,22 @@ radioButtons' addBr n radioName theOptions = Html.div (forM_ (M.assocs theOption
   Html.label (text txtShow) ! Atr.for (tv txtSend')
   when addBr Html.br
   ) ! Atr.class_ "radio-in"
+
+-- Trying to make one that gives a tooltip for that
+-- particular orthography.
+radioButtons'' :: Bool -> Bool -> Int -> T.Text -> M.Map T.Text (T.Text, T.Text) -> Html
+radioButtons'' addBr abvBlw n radioName theOptions = Html.div (forM_ (zip [1..] (M.assocs theOptions)) $ \(idx, (txtShow, (txtSend, txtInfo))) -> do
+  let txtSend' = txtSend <> T.pack (show n)
+  Html.input ! Atr.type_ "radio" ! Atr.id (tv txtSend') ! Atr.name (tv radioName) ! Atr.value (tv txtSend)
+  Html.label (text txtShow <> do
+       Html.span (text txtInfo) ! Atr.class_ "tooltiptext"
+    ) ! Atr.for (tv txtSend') ! Atr.class_ ("tooltip " <> toolPos <> (if idx == 1 then " toolfirst" else ""))
+  when addBr Html.br
+  ) ! Atr.class_ "radio-in"
+  where 
+    toolPos 
+      | abvBlw    = "toolabove"
+      | otherwise = "toolbelow"
 
 {-
   <input type="radio" id="html" name="fav_language" value="HTML">
