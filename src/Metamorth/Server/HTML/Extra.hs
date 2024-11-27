@@ -1,10 +1,14 @@
 module Metamorth.Server.HTML.Extra
   ( invertOrthMap
   , invertOrthMapAlt
+  , invertOrthMapNew
   , mapMaybeFst
   ) where
 
 import Control.Arrow (first)
+
+import Data.Maybe (fromMaybe)
+import Data.String (IsString)
 
 import Data.Map.Strict qualified as M
 import Data.Set        qualified as S
@@ -23,6 +27,18 @@ insertWithElse op f k val
 
 
 -- -> M.Map String (oorth, String)
+
+invertOrthMapNew :: forall outOrth txt. (Ord outOrth, Ord txt, IsString txt) => M.Map txt txt -> M.Map txt outOrth -> M.Map outOrth (S.Set txt, txt)
+invertOrthMapNew dscMap = M.foldlWithKey (\mp' k val -> insertWithElse insertFst makeFirst val (k) mp') M.empty
+  where
+    insertFst :: txt -> (S.Set txt,txt) -> (S.Set txt,txt)
+    insertFst x (st, dsc) 
+      | dsc == "" = (S.insert x st, fromMaybe "" (M.lookup x dscMap))
+      | otherwise = (S.insert x st, dsc)
+
+    makeFirst :: txt -> (S.Set txt, txt)
+    makeFirst x = (S.singleton x, dsc)
+      where dsc = fromMaybe "" (M.lookup x dscMap)
 
 invertOrthMapAlt :: (Ord outOrth, Ord txt) => M.Map txt (outOrth, String) -> M.Map outOrth (S.Set txt, String)
 invertOrthMapAlt = M.foldlWithKey (\mp' k (val, dsc) -> insertWithElse insertFst makeFirst val (k, dsc) mp') M.empty
