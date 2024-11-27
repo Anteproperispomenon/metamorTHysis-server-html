@@ -25,11 +25,10 @@ insertWithElse :: (Ord k) => (w -> v -> v) -> (w -> v) -> k -> w -> M.Map k v ->
 insertWithElse op f k val
   = M.alter (\case {Nothing -> Just $ f val ; (Just y) -> Just $ op val y}) k
 
-
 -- -> M.Map String (oorth, String)
 
 invertOrthMapNew :: forall outOrth txt. (Ord outOrth, Ord txt, IsString txt) => M.Map txt txt -> M.Map txt outOrth -> M.Map outOrth (S.Set txt, txt)
-invertOrthMapNew dscMap = M.foldlWithKey (\mp' k val -> insertWithElse insertFst makeFirst val (k) mp') M.empty
+invertOrthMapNew dscMap = M.foldlWithKey (\mp' k val -> insertWithElse insertFst makeFirst val k mp') M.empty
   where
     insertFst :: txt -> (S.Set txt,txt) -> (S.Set txt,txt)
     insertFst x (st, dsc) 
