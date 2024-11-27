@@ -1,6 +1,5 @@
 module Metamorth.Server.HTML.Extra
   ( invertOrthMap
-  , invertOrthMapAlt
   , invertOrthMapNew
   , mapMaybeFst
   ) where
@@ -39,14 +38,6 @@ invertOrthMapNew dscMap = M.foldlWithKey (\mp' k val -> insertWithElse insertFst
     makeFirst x = (S.singleton x, dsc)
       where dsc = fromMaybe "" (M.lookup x dscMap)
 
-invertOrthMapAlt :: (Ord outOrth, Ord txt) => M.Map txt (outOrth, String) -> M.Map outOrth (S.Set txt, String)
-invertOrthMapAlt = M.foldlWithKey (\mp' k (val, dsc) -> insertWithElse insertFst makeFirst val (k, dsc) mp') M.empty
-  where
-    insertFst :: (Ord a{-, Semigroup b-}) => (a,b) -> (S.Set a,b) -> (S.Set a,b)
-    insertFst (x,_z) (st, dsc) = (S.insert x st, dsc)
-
-    makeFirst :: (a,b) -> (S.Set a, b)
-    makeFirst (x,y) = (S.singleton x, y)
 
 -- mapMaybe :: (a -> Maybe b) -> Map k a -> Map k b
 

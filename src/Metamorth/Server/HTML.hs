@@ -133,12 +133,6 @@ revMap
   -> M.Map T.Text T.Text
 revMap orthMap = M.map T.pack $ M.mapKeys stripStart $ M.mapMaybe S.lookupMin $ invertOrthMap orthMap
 
-revMap'
-  :: forall orth. (Show orth, Ord orth, Enum orth, Bounded orth)
-  => M.Map String (orth, String)
-  -> M.Map T.Text (T.Text, T.Text)
-revMap' orthMap = M.map (T.pack *** T.pack) $ M.mapKeys stripStart $ mapMaybeFst S.lookupMin $ invertOrthMapAlt orthMap
-
 revMapNew
   :: forall orth. (Show orth, Ord orth, Enum orth, Bounded orth)
   => M.Map String String
@@ -254,7 +248,7 @@ radioButtons' addBr n radioName theOptions = Html.div (forM_ (M.assocs theOption
 radioButtons'' :: Bool -> Bool -> Int -> T.Text -> M.Map T.Text (T.Text, T.Text) -> Html
 radioButtons'' addBr abvBlw n radioName theOptions = Html.div (forM_ (zip [1..] (M.assocs theOptions)) $ \(idx, (txtShow, (txtSend, txtInfo))) -> do
   let txtSend' = txtSend <> T.pack (show n)
-      txtInfo' = if (txtInfo == "") then ("Couldn't find description") else txtInfo
+      txtInfo' = if (txtInfo == "") then ("No description given/found.") else txtInfo
   Html.input ! Atr.type_ "radio" ! Atr.id (tv txtSend') ! Atr.name (tv radioName) ! Atr.value (tv txtSend)
   Html.label (text txtShow <> do
        Html.span (text txtInfo') ! Atr.class_ "tooltiptext"
