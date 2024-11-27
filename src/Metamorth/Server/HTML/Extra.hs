@@ -1,6 +1,13 @@
 module Metamorth.Server.HTML.Extra
   ( invertOrthMap
+  , invertOrthMapNew
+  , mapMaybeFst
   ) where
+
+import Control.Arrow (first)
+
+import Data.Maybe (fromMaybe)
+import Data.String (IsString)
 
 import Data.Map.Strict qualified as M
 import Data.Set        qualified as S
@@ -16,3 +23,29 @@ invertOrthMap = M.foldlWithKey (\mp' k val -> insertWithElse S.insert S.singleto
 insertWithElse :: (Ord k) => (w -> v -> v) -> (w -> v) -> k -> w -> M.Map k v -> M.Map k v
 insertWithElse op f k val
   = M.alter (\case {Nothing -> Just $ f val ; (Just y) -> Just $ op val y}) k
+
+-- -> M.Map String (oorth, String)
+
+invertOrthMapNew :: forall outOrth txt. (Ord outOrth, Ord txt, IsString txt) => M.Map txt txt -> M.Map txt outOrth -> M.Map outOrth (S.Set txt, txt)
+invertOrthMapNew dscMap = M.foldlWithKey (\mp' k val -> insertWithElse insertFst makeFirst val k mp') M.empty
+  where
+    insertFst :: txt -> (S.Set txt,txt) -> (S.Set txt,txt)
+    insertFst x (st, dsc) 
+      | dsc == "" = (S.insert x st, fromMaybe "" (M.lookup x dscMap))
+      | otherwise = (S.insert x st, dsc)
+
+    makeFirst :: txt -> (S.Set txt, txt)
+    makeFirst x = (S.singleton x, dsc)
+      where dsc = fromMaybe "" (M.lookup x dscMap)
+
+
+-- mapMaybe :: (a -> Maybe b) -> Map k a -> Map k b
+
+mapMaybeFst :: (a -> Maybe b) -> M.Map k (a,c) -> M.Map k (b,c)
+mapMaybeFst f = M.mapMaybe 
+  (\(x,y) -> case f x of
+     Nothing  -> Nothing
+     (Just z) -> Just (z,y)
+  )
+
+
